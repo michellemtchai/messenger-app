@@ -64,9 +64,15 @@ router.get("/", async (req, res, next) => {
       // set property unreadCount for each conversation
       let otherUserId = convoJSON.otherUser.id;
       let unreadCount = 0;
-      convoJSON.messages.forEach((message) => {
+      convoJSON.lasReadMessageIndex = -1;
+      convoJSON.messages.forEach((message, index) => {
+        // increment unread message count
         if (message.senderId === otherUserId && !message.read) {
           unreadCount++;
+        }
+        // update index of message last read by other user
+        if (message.senderId !== otherUserId && message.read) {
+          convoJSON.lasReadMessageIndex = index;
         }
       });
       convoJSON.unreadCount = unreadCount;
