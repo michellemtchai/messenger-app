@@ -65,7 +65,7 @@ router.get("/", async (req, res, next) => {
       let otherUserId = convoJSON.otherUser.id;
       let unreadCount = 0;
       convoJSON.messages.forEach((message) => {
-        if (message.senderId !== otherUserId && !message.read) {
+        if (message.senderId === otherUserId && !message.read) {
           unreadCount++;
         }
       });
