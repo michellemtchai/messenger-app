@@ -96,4 +96,39 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+router.post("/read", async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.sendStatus(401);
+    }
+    const senderId = req.user.id;
+    const { recipientId } = req.body;
+    let conversation = await Conversation.findConversation(
+      senderId,
+      recipientId
+    );
+    let readMessageIds = [];
+    conversation.messages.forEach((message) => {
+      if (message.senderId !== senderId) {
+        readMessageIds.push(message.id);
+      }
+    });
+    await Message.update(
+      {
+        read: true,
+      },
+      {
+        where: {
+          id: {
+            [Op.in]: readMessageIds,
+          },
+        },
+      }
+    );
+    res.json({ unreadCount: 0 });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
