@@ -61,6 +61,16 @@ router.get("/", async (req, res, next) => {
         delete convoJSON.user2;
       }
 
+      // set property unreadCount for each conversation
+      let otherUserId = convoJSON.otherUser.id;
+      let unreadCount = 0;
+      convoJSON.messages.forEach((message) => {
+        if (message.senderId !== otherUserId && !message.read) {
+          unreadCount++;
+        }
+      });
+      convoJSON.unreadCount = unreadCount;
+
       // set property for online status of the other user
       if (onlineUsers.includes(convoJSON.otherUser.id)) {
         convoJSON.otherUser.online = true;
