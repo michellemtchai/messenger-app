@@ -11,18 +11,13 @@ const Messages = (props) => {
         const time = moment(message.createdAt).format("h:mm");
 
         return (
-          <>
+          <React.Fragment key={message.id}>
             {message.senderId === userId ? (
               <>
-                <SenderBubble
-                  key={message.id}
-                  text={message.text}
-                  time={time}
-                />
+                <SenderBubble text={message.text} time={time} />
               </>
             ) : (
               <OtherUserBubble
-                key={message.id}
                 text={message.text}
                 time={time}
                 otherUser={otherUser}
@@ -33,7 +28,7 @@ const Messages = (props) => {
               username={otherUser.username}
               photoUrl={otherUser.photoUrl}
             />
-          </>
+          </React.Fragment>
         );
       })}
     </Box>
