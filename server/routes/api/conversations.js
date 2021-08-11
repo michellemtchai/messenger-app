@@ -19,75 +19,13 @@ router.get("/", async (req, res, next) => {
           user2Id: userId,
         },
       },
-      attributes: ["id"],
+      attributes: ["id", "user1LastReadIndex", "user2LastReadIndex"],
       order: [[Message, "createdAt", "DESC"]],
-      include: [
-        { model: Message, order: ["createdAt", "DESC"] },
-        {
-          model: User,
-          as: "user1",
-          where: {
-            id: {
-              [Op.not]: userId,
-            },
-          },
-          attributes: ["id", "username", "photoUrl"],
-          required: false,
-        },
-        {
-          model: User,
-          as: "user2",
-          where: {
-            id: {
-              [Op.not]: userId,
-            },
-          },
-          attributes: ["id", "username", "photoUrl"],
-          required: false,
-        },
-      ],
+      include: convoInclude(userId),
     });
 
     for (let i = 0; i < conversations.length; i++) {
-      const convo = conversations[i];
-      const convoJSON = convo.toJSON();
-
-      // set a property "otherUser" so that frontend will have easier access
-      if (convoJSON.user1) {
-        convoJSON.otherUser = convoJSON.user1;
-        delete convoJSON.user1;
-      } else if (convoJSON.user2) {
-        convoJSON.otherUser = convoJSON.user2;
-        delete convoJSON.user2;
-      }
-
-      // set property unreadCount for each conversation
-      let otherUserId = convoJSON.otherUser.id;
-      let unreadCount = 0;
-      convoJSON.lasReadMessageIndex = -1;
-      convoJSON.messages.forEach((message, index) => {
-        // increment unread message count
-        if (message.senderId === otherUserId && !message.read) {
-          unreadCount++;
-        }
-        // update index of message last read by other user
-        if (message.senderId !== otherUserId && message.read) {
-          convoJSON.lasReadMessageIndex = index;
-        }
-      });
-      convoJSON.unreadCount = unreadCount;
-
-      // set property for online status of the other user
-      if (onlineUsers.includes(convoJSON.otherUser.id)) {
-        convoJSON.otherUser.online = true;
-      } else {
-        convoJSON.otherUser.online = false;
-      }
-
-      // set properties for notification count and latest message preview
-      convoJSON.latestMessageText = convoJSON.messages[0].text;
-      convoJSON.messages.reverse();
-      conversations[i] = convoJSON;
+      conversations[i] = formatConversation(conversations[i]);
     }
 
     res.json(conversations);
@@ -96,39 +34,152 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.post("/read", async (req, res, next) => {
+router.post("/:id/read", async (req, res, next) => {
   try {
     if (!req.user) {
       return res.sendStatus(401);
     }
-    const senderId = req.user.id;
-    const { recipientId } = req.body;
-    let conversation = await Conversation.findConversation(
-      senderId,
-      recipientId
-    );
-    let readMessageIds = [];
-    conversation.messages.forEach((message) => {
-      if (message.senderId !== senderId) {
-        readMessageIds.push(message.id);
-      }
-    });
-    await Message.update(
-      {
-        read: true,
+    const convoId = req.params.id;
+    const userId = req.user.id;
+    const { otherUserId } = req.body;
+    let conversation = await Conversation.findOne({
+      where: {
+        id: convoId,
       },
-      {
-        where: {
-          id: {
-            [Op.in]: readMessageIds,
-          },
-        },
-      }
-    );
-    res.json({ unreadCount: 0 });
+      include: convoInclude(userId),
+    });
+    conversation = formatConversation(conversation);
+    if (conversation.hasOwnProperty("user1")) {
+      conversation.lastReadIndex = updateLastReadIndex(
+        "user2LastReadIndex",
+        convoId,
+        conversation.messages,
+        otherUserId
+      );
+    } else if (conversation.hasOwnProperty("user2")) {
+      conversation.lastReadIndex = updateLastReadIndex(
+        "user1LastReadIndex",
+        convoId,
+        conversation.messages,
+        otherUserId
+      );
+    }
+    conversation.unreadCount = 0;
+    res.json(conversation);
   } catch (error) {
     next(error);
   }
 });
+
+const convoInclude = (userId) => {
+  return [
+    { model: Message, order: ["createdAt", "DESC"] },
+    {
+      model: User,
+      as: "user1",
+      where: {
+        id: {
+          [Op.not]: userId,
+        },
+      },
+      attributes: ["id", "username", "photoUrl"],
+      required: false,
+    },
+    {
+      model: User,
+      as: "user2",
+      where: {
+        id: {
+          [Op.not]: userId,
+        },
+      },
+      attributes: ["id", "username", "photoUrl"],
+      required: false,
+    },
+  ];
+};
+
+const formatConversation = (conversation) => {
+  const convoJSON = conversation.toJSON();
+
+  // set a property "otherUser" so that frontend will have easier access
+  if (convoJSON.user1) {
+    convoJSON.otherUser = convoJSON.user1;
+    delete convoJSON.user1;
+    // set property lastReadIndex for each conversation
+    convoJSON.lastReadIndex = convoJSON.user1LastReadIndex;
+  } else if (convoJSON.user2) {
+    convoJSON.otherUser = convoJSON.user2;
+    delete convoJSON.user2;
+    // set property lastReadIndex for each conversation
+    convoJSON.lastReadIndex = convoJSON.user2LastReadIndex;
+  }
+  // set property unreadCount for each conversation
+  let otherUserId = convoJSON.otherUser.id;
+  convoJSON.unreadCount = unreadCount(
+    convoJSON.messages,
+    otherUserId,
+    convoJSON.lastReadIndex
+  );
+
+  // set property for online status of the other user
+  if (onlineUsers.includes(convoJSON.otherUser.id)) {
+    convoJSON.otherUser.online = true;
+  } else {
+    convoJSON.otherUser.online = false;
+  }
+
+  // set properties for notification count and latest message preview
+  convoJSON.latestMessageText = convoJSON.messages[0].text;
+  convoJSON.messages.reverse();
+  return convoJSON;
+};
+
+const unreadCount = (messages, otherUserId, lastIndex) => {
+  let unreadCount = 0;
+  if (lastIndex === -1) {
+    messages.forEach((message) => {
+      if (message.senderId !== otherUserId) {
+        unreadCount++;
+      }
+    });
+  } else {
+    if (messages.length - 1 > lastIndex) {
+      for (let i = lastIndex + 1; i < messages.length; i++) {
+        if (messages[i].senderId !== otherUserId) {
+          unreadCount++;
+        }
+      }
+    }
+  }
+  return unreadCount;
+};
+
+const updateLastReadIndex = async (
+  lastIndexKey,
+  convoId,
+  messages,
+  otherUserId
+) => {
+  let lastIndex = -1;
+  let index = messages.length - 1;
+  while (index > 0) {
+    if (messages[index].senderId !== otherUserId) {
+      lastIndex = index;
+    }
+    index--;
+  }
+  await Conversation.update(
+    {
+      [lastIndexKey]: lastIndex,
+    },
+    {
+      where: {
+        id: convoId,
+      },
+    }
+  );
+  return lastIndex;
+};
 
 module.exports = router;
