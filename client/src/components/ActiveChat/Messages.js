@@ -13,9 +13,7 @@ const Messages = (props) => {
         return (
           <React.Fragment key={message.id}>
             {message.senderId === userId ? (
-              <>
-                <SenderBubble text={message.text} time={time} />
-              </>
+              <SenderBubble text={message.text} time={time} />
             ) : (
               <OtherUserBubble
                 text={message.text}
@@ -24,7 +22,7 @@ const Messages = (props) => {
               />
             )}
             <ReadReceipt
-              show={readIndex === index}
+              show={message.showReadReceipt}
               username={otherUser.username}
               photoUrl={otherUser.photoUrl}
             />

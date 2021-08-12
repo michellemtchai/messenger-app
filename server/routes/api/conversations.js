@@ -51,14 +51,14 @@ router.post("/:id/read", async (req, res, next) => {
     conversation = formatConversation(conversation);
     if (conversation.hasOwnProperty("user1")) {
       conversation.lastReadIndex = updateLastReadIndex(
-        "user1LastReadIndex",
+        "user1LastReadIndex", // last read index for current user
         convoId,
         conversation.messages,
         otherUserId
       );
     } else if (conversation.hasOwnProperty("user2")) {
       conversation.lastReadIndex = updateLastReadIndex(
-        "user2LastReadIndex",
+        "user2LastReadIndex", // last read index for current user
         convoId,
         conversation.messages,
         otherUserId
@@ -107,8 +107,11 @@ const formatConversation = (conversation) => {
     convoJSON.otherUser = convoJSON.user1;
     delete convoJSON.user1;
 
-    // set property lastReadIndex of the other user for each conversation
-    convoJSON.lastReadIndex = convoJSON.user1LastReadIndex;
+    // add property showReadReceipt of the other user for each conversation
+    convoJSON.messages = setShowReadReceipts(
+      convoJSON.messages,
+      convoJSON.user1LastReadIndex
+    );
 
     // set property unreadCount of current user for each conversation
     const otherUserId = convoJSON.otherUser.id;
@@ -122,7 +125,10 @@ const formatConversation = (conversation) => {
     delete convoJSON.user2;
 
     // set property lastReadIndex of the other user for each conversation
-    convoJSON.lastReadIndex = convoJSON.user2LastReadIndex;
+    convoJSON.messages = setShowReadReceipts(
+      convoJSON.messages,
+      convoJSON.user2LastReadIndex
+    );
 
     // set property unreadCount of current user for each conversation
     const otherUserId = convoJSON.otherUser.id;
@@ -144,6 +150,17 @@ const formatConversation = (conversation) => {
   convoJSON.latestMessageText = convoJSON.messages[0].text;
   convoJSON.messages.reverse();
   return convoJSON;
+};
+
+const setShowReadReceipts = (messages, lastIndex) => {
+  return messages.map((message, index) => {
+    if (index === lastIndex) {
+      message.showReadReceipt = true;
+    } else {
+      message.showReadReceipt = false;
+    }
+    return message;
+  });
 };
 
 const unreadCount = (messages, otherUserId, lastIndex) => {
