@@ -51,14 +51,14 @@ router.post("/:id/read", async (req, res, next) => {
     conversation = formatConversation(conversation);
     if (conversation.hasOwnProperty("user1")) {
       conversation.lastReadIndex = updateLastReadIndex(
-        "user2LastReadIndex",
+        "user1LastReadIndex",
         convoId,
         conversation.messages,
         otherUserId
       );
     } else if (conversation.hasOwnProperty("user2")) {
       conversation.lastReadIndex = updateLastReadIndex(
-        "user1LastReadIndex",
+        "user2LastReadIndex",
         convoId,
         conversation.messages,
         otherUserId
@@ -164,8 +164,9 @@ const updateLastReadIndex = async (
   let lastIndex = -1;
   let index = messages.length - 1;
   while (index > 0) {
-    if (messages[index].senderId !== otherUserId) {
+    if (messages[index].senderId === otherUserId) {
       lastIndex = index;
+      break;
     }
     index--;
   }
