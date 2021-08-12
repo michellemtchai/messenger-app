@@ -72,8 +72,8 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    readChat: (id, recipientId) => {
-      dispatch(readChat(id, recipientId));
+    readChat: (id) => {
+      dispatch(readChat(id));
     },
   };
 };
