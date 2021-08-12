@@ -25,7 +25,7 @@ router.get("/", async (req, res, next) => {
     });
 
     for (let i = 0; i < conversations.length; i++) {
-      conversations[i] = formatConversation(conversations[i]);
+      conversations[i] = formatConversation(conversations[i].toJSON());
     }
 
     res.json(conversations);
@@ -47,23 +47,26 @@ router.post("/:id/read", async (req, res, next) => {
       },
       include: convoInclude(userId),
     });
-    if (conversation.user1) {
-      conversation.user2LastReadIndex = updateLastReadIndex(
+    let convoJSON = conversation.toJSON();
+    if (convoJSON.user1) {
+      // not null when other user
+      convoJSON.user2LastReadIndex = await updateLastReadIndex(
         "user2LastReadIndex", // last read index for current user
         convoId,
-        conversation.messages,
-        conversation.user1.id
+        convoJSON.messages,
+        convoJSON.user1.id // other user id
       );
-    } else if (conversation.user2) {
-      conversation.user1LastReadIndex = updateLastReadIndex(
+    } else if (convoJSON.user2) {
+      // not null when other user
+      convoJSON.user1LastReadIndex = await updateLastReadIndex(
         "user1LastReadIndex", // last read index for current user
         convoId,
-        conversation.messages,
-        conversation.user2.id
+        convoJSON.messages,
+        convoJSON.user2.id // other user id
       );
     }
-    conversation = formatConversation(conversation);
-    res.json(conversation);
+    convoJSON = formatConversation(convoJSON, false);
+    res.json(convoJSON);
   } catch (error) {
     next(error);
   }
@@ -97,8 +100,11 @@ const convoInclude = (userId) => {
   ];
 };
 
-const formatConversation = (conversation) => {
-  const convoJSON = conversation.toJSON();
+const formatConversation = (convoJSON, reverse = true) => {
+  // order messages from oldest to newest
+  if (reverse) {
+    convoJSON.messages.reverse();
+  }
 
   // set a property "otherUser" so that frontend will have easier access
   if (convoJSON.user1) {
@@ -128,7 +134,6 @@ const formatConversation = (conversation) => {
 
   // set properties for notification count and latest message preview
   convoJSON.latestMessageText = convoJSON.messages[0].text;
-  convoJSON.messages.reverse();
   return convoJSON;
 };
 
@@ -189,14 +194,12 @@ const updateLastReadIndex = async (
   messages,
   otherUserId
 ) => {
-  let lastIndex = -1;
-  let index = messages.length - 1;
-  while (index > 0) {
-    if (messages[index].senderId === otherUserId) {
-      lastIndex = index;
+  let lastIndex = messages.length - 1;
+  while (lastIndex > 0) {
+    if (messages[lastIndex].senderId === otherUserId) {
       break;
     }
-    index--;
+    lastIndex--;
   }
   await Conversation.update(
     {

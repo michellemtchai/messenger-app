@@ -85,9 +85,7 @@ export const addUpdatedConvoToStore = (state, updatedConvo) => {
   const id = updatedConvo.id;
   return state.map((convo) => {
     if (convo.id === id) {
-      const convoCopy = { ...convo };
-      convoCopy.unreadCount = 0;
-      return convoCopy;
+      return updatedConvo;
     } else {
       return convo;
     }
