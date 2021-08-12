@@ -7,7 +7,7 @@ const Messages = (props) => {
   const { messages, otherUser, userId } = props;
   return (
     <Box>
-      {messages.map((message, index) => {
+      {messages.map((message) => {
         const time = moment(message.createdAt).format("h:mm");
 
         return (
