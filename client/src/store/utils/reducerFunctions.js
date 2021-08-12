@@ -95,3 +95,28 @@ export const addUpdatedConvoToStore = (state, updatedConvo) => {
     }
   });
 };
+
+export const addUpdatedReadReceiptToStore = (state, updatedConvo) => {
+  return state.map((convo) => {
+    if (convo.id === updatedConvo.id) {
+      let convoCopy = { ...convo };
+      convoCopy.user1LastReadIndex = updatedConvo.user1LastReadIndex;
+      convoCopy.user2LastReadIndex = updatedConvo.user2LastReadIndex;
+      const lastReadIndexKey = convoCopy.hasOwnProperty("user1")
+        ? "user2LastReadIndex"
+        : "user1LastReadIndex";
+      const lastReadIndex = convoCopy[lastReadIndexKey];
+      convoCopy.messages = convoCopy.messages.map((message, i) => {
+        if (lastReadIndex === i) {
+          message.showReadReceipt = true;
+        } else {
+          message.showReadReceipt = false;
+        }
+        return message;
+      });
+      return convoCopy;
+    } else {
+      return convo;
+    }
+  });
+};
