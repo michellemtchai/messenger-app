@@ -22,7 +22,7 @@ const ReadReceipt = (props) => {
   const classes = useStyles();
   const { show, photoUrl, username } = props;
 
-  return show ? (
+  return show && (
     <Box className={classes.root}>
       <Avatar
         alt={`Read by ${username}`}
@@ -30,9 +30,7 @@ const ReadReceipt = (props) => {
         className={classes.profilePic}
       ></Avatar>
     </Box>
-  ) : (
-    ""
-  );
+  )
 };
 
 export default ReadReceipt;
