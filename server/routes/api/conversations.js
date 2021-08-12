@@ -48,23 +48,22 @@ router.post("/:id/read", async (req, res, next) => {
       },
       include: convoInclude(userId),
     });
-    conversation = formatConversation(conversation);
     if (conversation.hasOwnProperty("user1")) {
-      conversation.lastReadIndex = updateLastReadIndex(
+      conversation.user1LastReadIndex = updateLastReadIndex(
         "user1LastReadIndex", // last read index for current user
         convoId,
         conversation.messages,
         otherUserId
       );
     } else if (conversation.hasOwnProperty("user2")) {
-      conversation.lastReadIndex = updateLastReadIndex(
+      conversation.user2LastReadIndex = updateLastReadIndex(
         "user2LastReadIndex", // last read index for current user
         convoId,
         conversation.messages,
         otherUserId
       );
     }
-    conversation.unreadCount = 0;
+    conversation = formatConversation(conversation);
     res.json(conversation);
   } catch (error) {
     next(error);
@@ -106,35 +105,17 @@ const formatConversation = (conversation) => {
   if (convoJSON.user1) {
     convoJSON.otherUser = convoJSON.user1;
     delete convoJSON.user1;
-
-    // add property showReadReceipt of the other user for each conversation
-    convoJSON.messages = setShowReadReceipts(
-      convoJSON.messages,
-      convoJSON.user1LastReadIndex
-    );
-
-    // set property unreadCount of current user for each conversation
-    const otherUserId = convoJSON.otherUser.id;
-    convoJSON.unreadCount = unreadCount(
-      convoJSON.messages,
-      otherUserId,
+    setReadAttributes(
+      convoJSON,
+      convoJSON.user1LastReadIndex,
       convoJSON.user2LastReadIndex
     );
   } else if (convoJSON.user2) {
     convoJSON.otherUser = convoJSON.user2;
     delete convoJSON.user2;
-
-    // set property lastReadIndex of the other user for each conversation
-    convoJSON.messages = setShowReadReceipts(
-      convoJSON.messages,
-      convoJSON.user2LastReadIndex
-    );
-
-    // set property unreadCount of current user for each conversation
-    const otherUserId = convoJSON.otherUser.id;
-    convoJSON.unreadCount = unreadCount(
-      convoJSON.messages,
-      otherUserId,
+    setReadAttributes(
+      convoJSON,
+      convoJSON.user2LastReadIndex,
       convoJSON.user1LastReadIndex
     );
   }
@@ -150,6 +131,26 @@ const formatConversation = (conversation) => {
   convoJSON.latestMessageText = convoJSON.messages[0].text;
   convoJSON.messages.reverse();
   return convoJSON;
+};
+
+const setReadAttributes = (
+  convoJSON,
+  otherUserLastReadIndex,
+  currentUserLastReadIndex
+) => {
+  // add property showReadReceipt to each message
+  convoJSON.messages = setShowReadReceipts(
+    convoJSON.messages,
+    otherUserLastReadIndex
+  );
+
+  // set property unreadCount of current user for each conversation
+  const otherUserId = convoJSON.otherUser.id;
+  convoJSON.unreadCount = unreadCount(
+    convoJSON.messages,
+    otherUserId,
+    currentUserLastReadIndex
+  );
 };
 
 const setShowReadReceipts = (messages, lastIndex) => {
