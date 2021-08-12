@@ -87,11 +87,7 @@ module.exports = conversation = {
     },
     setShowReadReceipts: (messages, lastIndex) => {
         return messages.map((message, index) => {
-            if (index === lastIndex) {
-                message.showReadReceipt = true;
-            } else {
-                message.showReadReceipt = false;
-            }
+            message.showReadReceipt = index === lastIndex;
             return message;
         });
     },

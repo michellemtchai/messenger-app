@@ -106,11 +106,7 @@ export const addUpdatedReadReceiptToStore = (state, updatedConvo) => {
         : "user1LastReadIndex";
       const lastReadIndex = convoCopy[lastReadIndexKey];
       convoCopy.messages = convoCopy.messages.map((message, i) => {
-        if (lastReadIndex === i) {
-          message.showReadReceipt = true;
-        } else {
-          message.showReadReceipt = false;
-        }
+        message.showReadReceipt = lastReadIndex === i;
         return message;
       });
       return convoCopy;
