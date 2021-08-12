@@ -36,7 +36,10 @@ const Chat = (props) => {
         online={otherUser.online}
         sidebar={true}
       />
-      <ChatContent conversation={conversation} />
+      <ChatContent
+        conversation={conversation}
+        count={conversation.unreadCount}
+      />
       <BadgeUnread count={conversation.unreadCount} />
     </Box>
   );
