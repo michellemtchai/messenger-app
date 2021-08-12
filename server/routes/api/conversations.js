@@ -41,26 +41,25 @@ router.post("/:id/read", async (req, res, next) => {
     }
     const convoId = req.params.id;
     const userId = req.user.id;
-    const { otherUserId } = req.body;
     let conversation = await Conversation.findOne({
       where: {
         id: convoId,
       },
       include: convoInclude(userId),
     });
-    if (conversation.hasOwnProperty("user1")) {
-      conversation.user1LastReadIndex = updateLastReadIndex(
-        "user1LastReadIndex", // last read index for current user
-        convoId,
-        conversation.messages,
-        otherUserId
-      );
-    } else if (conversation.hasOwnProperty("user2")) {
+    if (conversation.user1) {
       conversation.user2LastReadIndex = updateLastReadIndex(
         "user2LastReadIndex", // last read index for current user
         convoId,
         conversation.messages,
-        otherUserId
+        conversation.user1.id
+      );
+    } else if (conversation.user2) {
+      conversation.user1LastReadIndex = updateLastReadIndex(
+        "user1LastReadIndex", // last read index for current user
+        convoId,
+        conversation.messages,
+        conversation.user2.id
       );
     }
     conversation = formatConversation(conversation);
@@ -168,14 +167,14 @@ const unreadCount = (messages, otherUserId, lastIndex) => {
   let unreadCount = 0;
   if (lastIndex === -1) {
     messages.forEach((message) => {
-      if (message.senderId !== otherUserId) {
+      if (message.senderId === otherUserId) {
         unreadCount++;
       }
     });
   } else {
     if (messages.length - 1 > lastIndex) {
       for (let i = messages.length - 1; i > lastIndex; i--) {
-        if (messages[i].senderId !== otherUserId) {
+        if (messages[i].senderId === otherUserId) {
           unreadCount++;
         }
       }

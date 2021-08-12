@@ -119,11 +119,9 @@ export const searchUsers = (searchTerm) => async (dispatch) => {
   }
 };
 
-export const readChat = (id, otherUserId) => async (dispatch) => {
+export const readChat = (id) => async (dispatch) => {
   try {
-    const { data } = await axios.post(`/api/conversations/${id}/read`, {
-      otherUserId,
-    });
+    const { data } = await axios.post(`/api/conversations/${id}/read`);
     dispatch(updateConversation(data));
   } catch (error) {
     console.error(error);

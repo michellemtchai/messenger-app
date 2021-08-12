@@ -28,7 +28,7 @@ const ActiveChat = (props) => {
 
   useEffect(() => {
     if (conversation.unreadCount > 0) {
-      props.readChat(conversation.id, conversation.otherUser.id);
+      props.readChat(conversation.id);
     }
   });
 
