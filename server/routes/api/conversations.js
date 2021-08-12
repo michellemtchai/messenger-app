@@ -106,24 +106,32 @@ const formatConversation = (conversation) => {
   if (convoJSON.user1) {
     convoJSON.otherUser = convoJSON.user1;
     delete convoJSON.user1;
-    // set property lastReadIndex for each conversation
+
+    // set property lastReadIndex of the other user for each conversation
     convoJSON.lastReadIndex = convoJSON.user1LastReadIndex;
+
+    // set property unreadCount of current user for each conversation
+    const otherUserId = convoJSON.otherUser.id;
+    convoJSON.unreadCount = unreadCount(
+      convoJSON.messages,
+      otherUserId,
+      convoJSON.user2LastReadIndex
+    );
   } else if (convoJSON.user2) {
     convoJSON.otherUser = convoJSON.user2;
     delete convoJSON.user2;
-    // set property lastReadIndex for each conversation
-    convoJSON.lastReadIndex = convoJSON.user2LastReadIndex;
-  }
-  delete convoJSON.user1LastReadIndex;
-  delete convoJSON.user2LastReadIndex;
 
-  // set property unreadCount for each conversation
-  let otherUserId = convoJSON.otherUser.id;
-  convoJSON.unreadCount = unreadCount(
-    convoJSON.messages,
-    otherUserId,
-    convoJSON.lastReadIndex
-  );
+    // set property lastReadIndex of the other user for each conversation
+    convoJSON.lastReadIndex = convoJSON.user2LastReadIndex;
+
+    // set property unreadCount of current user for each conversation
+    const otherUserId = convoJSON.otherUser.id;
+    convoJSON.unreadCount = unreadCount(
+      convoJSON.messages,
+      otherUserId,
+      convoJSON.user1LastReadIndex
+    );
+  }
 
   // set property for online status of the other user
   if (onlineUsers.includes(convoJSON.otherUser.id)) {
@@ -148,7 +156,7 @@ const unreadCount = (messages, otherUserId, lastIndex) => {
     });
   } else {
     if (messages.length - 1 > lastIndex) {
-      for (let i = lastIndex + 1; i < messages.length; i++) {
+      for (let i = messages.length - 1; i > lastIndex; i--) {
         if (messages[i].senderId !== otherUserId) {
           unreadCount++;
         }
