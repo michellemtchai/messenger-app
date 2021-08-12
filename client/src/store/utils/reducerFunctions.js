@@ -86,9 +86,8 @@ export const addNewConvoToStore = (state, recipientId, message) => {
 };
 
 export const addUpdatedConvoToStore = (state, updatedConvo) => {
-  const id = updatedConvo.id;
   return state.map((convo) => {
-    if (convo.id === id) {
+    if (convo.id === updatedConvo.id) {
       return updatedConvo;
     } else {
       return convo;
