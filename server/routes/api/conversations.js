@@ -195,7 +195,10 @@ const updateLastReadIndex = async (
   otherUserId
 ) => {
   let lastIndex = messages.length - 1;
-  while (lastIndex > 0) {
+  while (lastIndex > -1) {
+    if (lastIndex === -1) {
+      break;
+    }
     if (messages[lastIndex].senderId === otherUserId) {
       break;
     }
