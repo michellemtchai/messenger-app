@@ -14,6 +14,9 @@ export const addMessageToStore = (state, payload) => {
   return state.map((convo) => {
     if (convo.id === message.conversationId) {
       const convoCopy = { ...convo };
+      if (message.senderId === convo.otherUser.id) {
+        convoCopy.unreadCount++;
+      }
       convoCopy.messages.push(message);
       convoCopy.latestMessageText = message.text;
       return convoCopy;
