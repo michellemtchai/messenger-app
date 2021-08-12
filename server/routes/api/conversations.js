@@ -114,6 +114,9 @@ const formatConversation = (conversation) => {
     // set property lastReadIndex for each conversation
     convoJSON.lastReadIndex = convoJSON.user2LastReadIndex;
   }
+  delete convoJSON.user1LastReadIndex;
+  delete convoJSON.user2LastReadIndex;
+
   // set property unreadCount for each conversation
   let otherUserId = convoJSON.otherUser.id;
   convoJSON.unreadCount = unreadCount(
