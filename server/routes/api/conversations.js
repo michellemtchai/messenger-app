@@ -50,17 +50,15 @@ router.post("/:id/read", async (req, res, next) => {
     });
     let convoJSON = conversation.toJSON();
     if (convoJSON.user1) {
-      convoJSON.user2LastReadIndex = await convoHelper.updateLastReadIndex(
+      convoHelper.updateLastReadIndex(
+        convoJSON,
         "user2LastReadIndex", // last read index for current user
-        convoId,
-        convoJSON.messages,
         convoJSON.user1.id // other user id
       );
     } else if (convoJSON.user2) {
-      convoJSON.user1LastReadIndex = await convoHelper.updateLastReadIndex(
+      convoHelper.updateLastReadIndex(
+        convoJSON,
         "user1LastReadIndex", // last read index for current user
-        convoId,
-        convoJSON.messages,
         convoJSON.user2.id // other user id
       );
     }

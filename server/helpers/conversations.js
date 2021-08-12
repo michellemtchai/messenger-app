@@ -114,17 +114,12 @@ module.exports = conversation = {
         }
         return unreadCount;
     },
-    updateLastReadIndex: async (
-        lastIndexKey,
-        convoId,
-        messages,
-        otherUserId
-    ) => {
-        let lastIndex = messages.length - 1;
+    updateLastReadIndex: async (convoJSON, lastIndexKey, otherUserId) => {
+        let lastIndex = convoJSON.messages.length - 1;
         while (lastIndex > -1) {
             if (
                 lastIndex === -1 ||
-                messages[lastIndex].senderId === otherUserId
+                convoJSON.messages[lastIndex].senderId === otherUserId
             ) {
                 break;
             }
@@ -136,10 +131,10 @@ module.exports = conversation = {
             },
             {
                 where: {
-                    id: convoId,
+                    id: convoJSON.id,
                 },
             }
         );
-        return lastIndex;
+        convoJSON[lastIndexKey] = lastIndex;
     },
 };
