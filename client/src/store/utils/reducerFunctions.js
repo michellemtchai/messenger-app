@@ -85,13 +85,26 @@ export const addNewConvoToStore = (state, recipientId, message) => {
   });
 };
 
-export const addUpdatedConvoToStore = (state, updatedConvo) => {
+export const addUpdatedConvoToStore = (state, updatedConvo, compute) => {
   return state.map((convo) => {
     if (convo.id === updatedConvo.id) {
       const convoCopy = { ...convo };
       convoCopy.messages = updatedConvo.messages;
-      convoCopy.unreadCount = updatedConvo.unreadCount;
-      convoCopy.lastReadIndex = updatedConvo.lastReadIndex;
+      if (compute) {
+        convoCopy.unreadCount = 0;
+        convoCopy.lastReadIndex = -1;
+        convoCopy.messages.forEach((message, index) => {
+          if (message.senderId === updatedConvo.recipientId && !message.read) {
+            convoCopy.unreadCount++;
+          }
+          if (message.senderId !== updatedConvo.recipientId && message.read) {
+            convoCopy.lastReadIndex = index;
+          }
+        });
+      } else {
+        convoCopy.unreadCount = updatedConvo.unreadCount;
+        convoCopy.lastReadIndex = updatedConvo.lastReadIndex;
+      }
       return convoCopy;
     } else {
       return convo;

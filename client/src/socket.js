@@ -23,7 +23,7 @@ socket.on("connect", () => {
     store.dispatch(setNewMessage(data.message, data.sender));
   });
   socket.on("update-read-receipt", (data) => {
-    store.dispatch(updateConversation(data));
+    store.dispatch(updateConversation(data, true));
   });
 });
 
