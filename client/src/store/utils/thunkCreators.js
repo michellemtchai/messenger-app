@@ -121,7 +121,9 @@ export const searchUsers = (searchTerm) => async (dispatch) => {
 
 export const readChat = (recipientId) => async (dispatch) => {
   try {
-    const { data } = await axios.get(`/api/conversations/read/${recipientId}`);
+    const { data } = await axios.put("/api/conversations/read", {
+      recipientId,
+    });
     dispatch(updateConversation(data));
     socket.emit("update-read-receipt", {
       id: data.id,

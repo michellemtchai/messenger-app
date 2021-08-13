@@ -35,13 +35,13 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.get("/read/:recipientId", async (req, res, next) => {
+router.put("/read", async (req, res, next) => {
   try {
     if (!req.user) {
       return res.sendStatus(401);
     }
     const userId = req.user.id;
-    const { recipientId } = req.params;
+    const { recipientId } = req.body;
     let conversation = await Conversation.findOne({
       where: {
         user1Id: {
@@ -58,7 +58,13 @@ router.get("/read/:recipientId", async (req, res, next) => {
       let convoJSON = conversation.toJSON();
       await convoHelper.updateMessagesToRead(convoJSON, recipientId);
       convoJSON = convoHelper.formatConversation(convoJSON, userId, false);
-      res.json(convoJSON);
+      res.json({
+        id: convoJSON.id,
+        userId: convoJSON.userId,
+        unreadCount: convoJSON.unreadCount,
+        lastReadIndex: convoJSON.lastReadIndex,
+        messages: convoJSON.messages,
+      });
     } else {
       throw Error("Conversation not found");
     }
