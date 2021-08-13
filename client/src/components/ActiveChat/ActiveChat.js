@@ -30,7 +30,7 @@ const ActiveChat = (props) => {
     if (conversation.unreadCount > 0) {
       props.readChat(conversation.otherUser.id);
     }
-  });
+  }, [conversation.unreadCount]);
 
   return (
     <Box className={classes.root}>
