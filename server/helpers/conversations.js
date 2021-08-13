@@ -70,22 +70,16 @@ module.exports = conversation = {
         return convoJSON;
     },
     updateMessagesToRead: async (convoJSON, recipientId) => {
-        let readMessageIds = [];
-        convoJSON.messages.forEach((message, i) => {
-            if (message.senderId == recipientId) {
-                convoJSON.messages[i].read = true;
-                readMessageIds.push(message.id);
-            }
-        });
         await Message.update(
             {
                 read: true,
             },
             {
                 where: {
-                    id: {
-                        [Op.in]: readMessageIds,
+                    senderId: {
+                        [Op.ne]: recipientId,
                     },
+                    read: false,
                 },
             }
         );
