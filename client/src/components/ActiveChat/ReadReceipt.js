@@ -28,7 +28,7 @@ const ReadReceipt = (props) => {
         alt={`Read by ${username}`}
         src={photoUrl}
         className={classes.profilePic}
-      ></Avatar>
+      />
     </Box>
   )
 };
