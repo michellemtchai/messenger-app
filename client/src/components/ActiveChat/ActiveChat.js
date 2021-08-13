@@ -28,7 +28,7 @@ const ActiveChat = (props) => {
 
   useEffect(() => {
     if (conversation.unreadCount > 0) {
-      props.readChat(conversation.id);
+      props.readChat(conversation.otherUser.id);
     }
   });
 
@@ -44,6 +44,7 @@ const ActiveChat = (props) => {
             <Messages
               messages={conversation.messages}
               otherUser={conversation.otherUser}
+              lastReadIndex={conversation.lastReadIndex}
               userId={user.id}
             />
             <Input
@@ -72,8 +73,8 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    readChat: (id) => {
-      dispatch(readChat(id));
+    readChat: (recipientId) => {
+      dispatch(readChat(recipientId));
     },
   };
 };

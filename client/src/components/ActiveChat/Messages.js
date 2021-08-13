@@ -4,10 +4,10 @@ import { SenderBubble, OtherUserBubble, ReadReceipt } from "../ActiveChat";
 import moment from "moment";
 
 const Messages = (props) => {
-  const { messages, otherUser, userId } = props;
+  const { messages, otherUser, userId, lastReadIndex } = props;
   return (
     <Box>
-      {messages.map((message) => {
+      {messages.map((message, index) => {
         const time = moment(message.createdAt).format("h:mm");
 
         return (
@@ -22,7 +22,7 @@ const Messages = (props) => {
               />
             )}
             <ReadReceipt
-              show={message.showReadReceipt}
+              show={lastReadIndex === index}
               username={otherUser.username}
               photoUrl={otherUser.photoUrl}
             />

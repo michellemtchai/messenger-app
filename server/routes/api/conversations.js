@@ -19,14 +19,14 @@ router.get("/", async (req, res, next) => {
           user2Id: userId,
         },
       },
-      attributes: ["id", "user1LastReadIndex", "user2LastReadIndex"],
+      attributes: ["id"],
       order: [[Message, "createdAt", "DESC"]],
       include: convoHelper.convoInclude(userId),
     });
 
     for (let i = 0; i < conversations.length; i++) {
       const convoJSON = conversations[i].toJSON();
-      conversations[i] = convoHelper.formatConversation(convoJSON);
+      conversations[i] = convoHelper.formatConversation(convoJSON, userId);
     }
 
     res.json(conversations);
@@ -35,35 +35,33 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.post("/:id/read", async (req, res, next) => {
+router.get("/read/:recipientId", async (req, res, next) => {
   try {
     if (!req.user) {
       return res.sendStatus(401);
     }
-    const convoId = req.params.id;
     const userId = req.user.id;
+    const { recipientId } = req.params;
     let conversation = await Conversation.findOne({
       where: {
-        id: convoId,
+        user1Id: {
+          [Op.or]: [userId, recipientId],
+        },
+        user2Id: {
+          [Op.or]: [userId, recipientId],
+        },
       },
+      order: [[Message, "createdAt", "ASC"]],
       include: convoHelper.convoInclude(userId),
     });
-    let convoJSON = conversation.toJSON();
-    if (convoJSON.user1) {
-      convoHelper.updateLastReadIndex(
-        convoJSON,
-        "user2LastReadIndex", // last read index for current user
-        convoJSON.user1.id // other user id
-      );
-    } else if (convoJSON.user2) {
-      convoHelper.updateLastReadIndex(
-        convoJSON,
-        "user1LastReadIndex", // last read index for current user
-        convoJSON.user2.id // other user id
-      );
+    if (conversation) {
+      let convoJSON = conversation.toJSON();
+      await convoHelper.updateMessagesToRead(convoJSON, recipientId);
+      convoJSON = convoHelper.formatConversation(convoJSON, userId, false);
+      res.json(convoJSON);
+    } else {
+      throw Error("Conversation not found");
     }
-    convoJSON = convoHelper.formatConversation(convoJSON, false);
-    res.json(convoJSON);
   } catch (error) {
     next(error);
   }

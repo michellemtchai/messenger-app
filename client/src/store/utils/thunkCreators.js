@@ -5,7 +5,7 @@ import {
   addConversation,
   setNewMessage,
   setSearchedUsers,
-  readConversation,
+  updateConversation,
 } from "../conversations";
 import { gotUser, setFetchingStatus } from "../user";
 
@@ -119,12 +119,33 @@ export const searchUsers = (searchTerm) => async (dispatch) => {
   }
 };
 
-export const readChat = (id) => async (dispatch) => {
+export const readChat = (recipientId) => async (dispatch) => {
   try {
-    const { data } = await axios.post(`/api/conversations/${id}/read`);
-    dispatch(readConversation(data));
-    socket.emit("update-read-receipt", data);
+    const { data } = await axios.get(`/api/conversations/read/${recipientId}`);
+    dispatch(updateConversation(data));
+    socket.emit(
+      "update-read-receipt",
+      transformConvoForOtherUser(data, data.userId)
+    );
   } catch (error) {
     console.error(error);
   }
+};
+
+const transformConvoForOtherUser = (convo, recipientId) => {
+  let data = {
+    id: convo.id,
+    messages: convo.messages,
+    unreadCount: 0,
+    lastReadIndex: -1,
+  };
+  convo.messages.forEach((message, index) => {
+    if (message.senderId === recipientId && !message.read) {
+      data.unreadCount++;
+    }
+    if (message.senderId !== recipientId && message.read) {
+      data.lastReadIndex = index;
+    }
+  });
+  return data;
 };
