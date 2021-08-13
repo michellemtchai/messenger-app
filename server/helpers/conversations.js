@@ -31,12 +31,23 @@ module.exports = conversation = {
         ];
     },
     formatConversation: (convoJSON, userId, reverse = true) => {
+        convoJSON.userId = userId;
+        conversation.reorderMessages(convoJSON, reverse);
+        conversation.setOtherUser(convoJSON);
+        conversation.setUnreadCount(convoJSON);
+        conversation.setOnlineStatus(convoJSON);
+
+        // set properties for notification count and latest message preview
+        convoJSON.latestMessageText = convoJSON.messages[0].text;
+        return convoJSON;
+    },
+    reorderMessages: (convoJSON, reverse) => {
         // reorder messages from oldest to newest
         if (reverse) {
             convoJSON.messages.reverse();
         }
-        convoJSON.userId = userId;
-
+    },
+    setOtherUser: (convoJSON) => {
         // set a property "otherUser" so that frontend will have easier access
         if (convoJSON.user1) {
             convoJSON.otherUser = convoJSON.user1;
@@ -45,7 +56,8 @@ module.exports = conversation = {
             convoJSON.otherUser = convoJSON.user2;
             delete convoJSON.user2;
         }
-
+    },
+    setUnreadCount: (convoJSON) => {
         // set unreadCount and lastReadIndex
         convoJSON.lastReadIndex = -1;
         convoJSON.unreadCount = 0;
@@ -57,17 +69,14 @@ module.exports = conversation = {
                 convoJSON.lastReadIndex = index;
             }
         });
-
+    },
+    setOnlineStatus: (convoJSON) => {
         // set property for online status of the other user
         if (onlineUsers.includes(convoJSON.otherUser.id)) {
             convoJSON.otherUser.online = true;
         } else {
             convoJSON.otherUser.online = false;
         }
-
-        // set properties for notification count and latest message preview
-        convoJSON.latestMessageText = convoJSON.messages[0].text;
-        return convoJSON;
     },
     updateMessagesToRead: async (convoJSON, recipientId) => {
         await Message.update(
@@ -76,9 +85,10 @@ module.exports = conversation = {
             },
             {
                 where: {
-                    senderId: {
-                        [Op.ne]: recipientId,
+                    id: {
+                        [Op.in]: convoJSON.messages.map((i) => i.id),
                     },
+                    senderId: recipientId,
                     read: false,
                 },
             }
