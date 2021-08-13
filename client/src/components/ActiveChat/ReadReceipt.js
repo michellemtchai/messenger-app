@@ -18,9 +18,12 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-const ReadReceipt = (props) => {
+const ReadReceipt = ({
+  show,
+  photoUrl,
+  username,
+}) => {
   const classes = useStyles();
-  const { show, photoUrl, username } = props;
 
   return show && (
     <Box className={classes.root}>
