@@ -7,7 +7,7 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     justifyContent: "space-between",
     marginLeft: 20,
-    flexGrow: 1,
+    flexGrow: 0.8,
   },
   username: {
     fontWeight: "bold",
@@ -15,17 +15,17 @@ const useStyles = makeStyles((theme) => ({
   },
   previewText: {
     fontSize: 12,
-    color: "#9CADC8",
+    color: (props) => (props.count > 0 ? "#000000" : "#9CADC8"),
+    fontWeight: (props) => (props.count > 0 ? "bold" : "normal"),
     letterSpacing: -0.17,
   },
 }));
 
 const ChatContent = (props) => {
-  const classes = useStyles();
+  const classes = useStyles(props);
 
-  const { conversation } = props;
+  const { conversation, count } = props;
   const { latestMessageText, otherUser } = conversation;
-
   return (
     <Box className={classes.root}>
       <Box>

@@ -1,7 +1,7 @@
 const router = require("express").Router();
-const { User, Conversation, Message } = require("../../db/models");
+const { Conversation, Message } = require("../../db/models");
 const { Op } = require("sequelize");
-const onlineUsers = require("../../onlineUsers");
+const convoHelper = require("../../helpers/conversations");
 
 // get all conversations for a user, include latest message text for preview, and all messages
 // include other user model so we have info on username/profile pic (don't include current user info)
@@ -21,60 +21,53 @@ router.get("/", async (req, res, next) => {
       },
       attributes: ["id"],
       order: [[Message, "createdAt", "DESC"]],
-      include: [
-        { model: Message, order: ["createdAt", "DESC"] },
-        {
-          model: User,
-          as: "user1",
-          where: {
-            id: {
-              [Op.not]: userId,
-            },
-          },
-          attributes: ["id", "username", "photoUrl"],
-          required: false,
-        },
-        {
-          model: User,
-          as: "user2",
-          where: {
-            id: {
-              [Op.not]: userId,
-            },
-          },
-          attributes: ["id", "username", "photoUrl"],
-          required: false,
-        },
-      ],
+      include: convoHelper.convoInclude(userId),
     });
 
     for (let i = 0; i < conversations.length; i++) {
-      const convo = conversations[i];
-      const convoJSON = convo.toJSON();
-
-      // set a property "otherUser" so that frontend will have easier access
-      if (convoJSON.user1) {
-        convoJSON.otherUser = convoJSON.user1;
-        delete convoJSON.user1;
-      } else if (convoJSON.user2) {
-        convoJSON.otherUser = convoJSON.user2;
-        delete convoJSON.user2;
-      }
-
-      // set property for online status of the other user
-      if (onlineUsers.includes(convoJSON.otherUser.id)) {
-        convoJSON.otherUser.online = true;
-      } else {
-        convoJSON.otherUser.online = false;
-      }
-
-      // set properties for notification count and latest message preview
-      convoJSON.latestMessageText = convoJSON.messages[0].text;
-      convoJSON.messages.reverse();
-      conversations[i] = convoJSON;
+      const convoJSON = conversations[i].toJSON();
+      conversations[i] = convoHelper.formatConversation(convoJSON, userId);
     }
 
     res.json(conversations);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/read", async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.sendStatus(401);
+    }
+    const userId = req.user.id;
+    const { recipientId } = req.body;
+    let conversation = await Conversation.findOne({
+      where: {
+        user1Id: {
+          [Op.or]: [userId, recipientId],
+        },
+        user2Id: {
+          [Op.or]: [userId, recipientId],
+        },
+      },
+      order: [[Message, "createdAt", "ASC"]],
+      include: convoHelper.convoInclude(userId),
+    });
+    if (conversation) {
+      let convoJSON = conversation.toJSON();
+      await convoHelper.updateMessagesToRead(convoJSON, recipientId);
+      convoJSON = convoHelper.formatConversation(convoJSON, userId, false);
+      res.json({
+        id: convoJSON.id,
+        userId: convoJSON.userId,
+        unreadCount: convoJSON.unreadCount,
+        lastReadIndex: convoJSON.lastReadIndex,
+        messages: convoJSON.messages,
+      });
+    } else {
+      throw Error("Conversation not found");
+    }
   } catch (error) {
     next(error);
   }
